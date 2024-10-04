@@ -1,0 +1,23 @@
+name: Region
+version: '${project.version}'
+main: cz.sengycraft.region.RegionPlugin
+description: 'A plugin to create and manage regions, only whitelisted users can interact in the region'
+api-version: '1.21'
+
+permissions:
+  region.menu:
+    description: 'Access to /region command'
+  region.wand:
+    description: 'Access to /region wand command'
+  region.add:
+    description: 'Access to /region add command'
+  region.remove:
+    description: 'Access to /region remove command'
+  region.whitelist:
+    description: 'Access to /region whitelist command'
+  region.create:
+    description: 'Access to /region create command'
+  region.flag:
+    description: 'Access to /region flag command'
+  region.bypass:
+    description: 'Bypasses flags in regions'
