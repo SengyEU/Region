@@ -14,3 +14,6 @@ database:
     cachePrepStmts: true
     prepStmtCacheSize: 250
     prepStmtCacheSqlLimit: 2048
+
+regions:
+  default-state: WHITELIST # EVERYONE, WHITELIST, NONE
