@@ -6,6 +6,7 @@ import cz.sengycraft.region.regions.RegionManager;
 import cz.sengycraft.region.regions.wand.WandManager;
 import cz.sengycraft.region.utils.MessageUtils;
 import cz.sengycraft.region.utils.Pair;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -18,6 +19,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 public class RegionCommand implements TabExecutor {
 
@@ -74,7 +76,71 @@ public class RegionCommand implements TabExecutor {
                             WandManager.getInstance().clearLocations(player.getUniqueId());
                         } catch (Exception e) {
                             MessageUtils.sendMessage(player, "region-error");
-                            plugin.getComponentLogger().error("Error when creating the region!", e);
+                            plugin.getComponentLogger().error("Error when editing the region!", e);
+                            return false;
+                        }
+                    }
+                    case "whitelist" -> {
+                        String name = args[1].toLowerCase();
+
+                        List<String> names = RegionManager.getInstance().getNames();
+                        if(!names.contains(name)) {
+                            MessageUtils.sendMessage(player, "region-not-exists");
+                            return false;
+                        }
+
+                        MessageUtils.sendMessage(player, "whitelist.title", new Pair<>("{region}", name));
+                        for(String playerName : RegionManager.getInstance().getRegion(name).getWhitelistedPlayers()) {
+                            MessageUtils.sendMessage(player, "whitelist.player", new Pair<>("{player}", playerName));
+                        }
+                    }
+                }
+            }
+            case 3 -> {
+                switch (args [0]) {
+                    case "add" -> {
+                        String name = args[1].toLowerCase();
+
+                        List<String> names = RegionManager.getInstance().getNames();
+                        if(!names.contains(name)) {
+                            MessageUtils.sendMessage(player, "region-not-exists");
+                            return false;
+                        }
+
+                        if(RegionManager.getInstance().getRegion(name).getWhitelistedPlayers().contains(args[2])) {
+                            MessageUtils.sendMessage(player, "whitelist.already");
+                            return false;
+                        }
+
+                        try {
+                            RegionManager.getInstance().getRegion(name).addWhitelistedPlayer(args[2]);
+                            MessageUtils.sendMessage(player, "whitelist.added", new Pair<>("{region}", name), new Pair<>("{player}", args[2]));
+                        } catch (Exception e) {
+                            MessageUtils.sendMessage(player, "region-error");
+                            plugin.getComponentLogger().error("Error when editing the region!", e);
+                            return false;
+                        }
+                    }
+                    case "remove" -> {
+                        String name = args[1].toLowerCase();
+
+                        List<String> names = RegionManager.getInstance().getNames();
+                        if(!names.contains(name)) {
+                            MessageUtils.sendMessage(player, "region-not-exists");
+                            return false;
+                        }
+
+                        if(!RegionManager.getInstance().getRegion(name).getWhitelistedPlayers().contains(args[2])) {
+                            MessageUtils.sendMessage(player, "whitelist.not");
+                            return false;
+                        }
+
+                        try {
+                            RegionManager.getInstance().getRegion(name).removeWhitelistedPlayer(args[2]);
+                            MessageUtils.sendMessage(player, "whitelist.removed", new Pair<>("{region}", name), new Pair<>("{player}", args[2]));
+                        } catch (Exception e) {
+                            MessageUtils.sendMessage(player, "region-error");
+                            plugin.getComponentLogger().error("Error when editing the region!", e);
                             return false;
                         }
                     }
@@ -89,12 +155,29 @@ public class RegionCommand implements TabExecutor {
     public @Nullable List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
         switch (args.length) {
             case 1 -> {
-                return Arrays.asList("wand", "create");
+                return Arrays.asList("wand", "create", "whitelist", "add", "remove");
             }
             case 2 -> {
                 switch (args[0]) {
                      case "create" -> {
                         return List.of("<name>");
+                    }
+                    case "whitelist", "add", "remove" -> {
+                         return RegionManager.getInstance().getNames();
+                    }
+                }
+            }
+            case 3 -> {
+                switch (args[0]) {
+                    case "add" -> {
+                        return Bukkit.getServer().getOnlinePlayers()
+                                .stream()
+                                .map(Player::getName)
+                                .filter(string -> !RegionManager.getInstance().getRegion(args[1]).getWhitelistedPlayers().contains(string))
+                                .collect(Collectors.toList());
+                    }
+                    case "remove" -> {
+                        return RegionManager.getInstance().getRegion(args[1]).getWhitelistedPlayers();
                     }
                 }
             }

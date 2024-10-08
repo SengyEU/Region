@@ -74,7 +74,7 @@ public class DatabaseManager {
         String createRegionWhitelistTable = """
             CREATE TABLE IF NOT EXISTS region_whitelist (
                 region_name VARCHAR(255),
-                player_uuid VARCHAR(255),
+                player_name VARCHAR(255),
                 FOREIGN KEY (region_name) REFERENCES regions(name) ON DELETE CASCADE
             );
             """;

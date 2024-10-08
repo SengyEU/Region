@@ -6,7 +6,9 @@ import cz.sengycraft.region.regions.flags.FlagState;
 import cz.sengycraft.region.storage.DatabaseOperations;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class RegionManager {
 
@@ -52,6 +54,10 @@ public class RegionManager {
         }
 
         return false;
+    }
+
+    public List<String> getNames() {
+        return regions.stream().map(Region::getName).collect(Collectors.toList());
     }
 
     public void deleteRegion(String name) throws Exception {

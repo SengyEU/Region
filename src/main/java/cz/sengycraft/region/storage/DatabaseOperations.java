@@ -39,7 +39,7 @@ public class DatabaseOperations {
                 Location pos2 = createLocation(regionResult, "pos2");
 
                 Map<Flag, FlagState> flags = loadFlags(connection, regionName);
-                List<UUID> whitelistedPlayers = loadWhitelistedPlayers(connection, regionName);
+                List<String> whitelistedPlayers = loadWhitelistedPlayers(connection, regionName);
 
                 allRegions.add(new Region(regionName, pos1, pos2, flags, whitelistedPlayers));
             }
@@ -51,7 +51,7 @@ public class DatabaseOperations {
         Location pos1 = null;
         Location pos2 = null;
         Map<Flag, FlagState> flags;
-        List<UUID> whitelistedPlayers;
+        List<String> whitelistedPlayers;
 
         try (Connection connection = hikariDataSource.getConnection()) {
             PreparedStatement regionStatement = connection.prepareStatement("SELECT * FROM regions WHERE name = ?");
@@ -93,15 +93,15 @@ public class DatabaseOperations {
         return flags;
     }
 
-    private List<UUID> loadWhitelistedPlayers(Connection connection, String regionName) throws SQLException {
-        List<UUID> whitelistedPlayers = new ArrayList<>();
+    private List<String> loadWhitelistedPlayers(Connection connection, String regionName) throws SQLException {
+        List<String> whitelistedPlayers = new ArrayList<>();
         PreparedStatement whitelistStatement = connection.prepareStatement("SELECT * FROM region_whitelist WHERE region_name = ?");
         whitelistStatement.setString(1, regionName);
         ResultSet whitelistResult = whitelistStatement.executeQuery();
 
         while (whitelistResult.next()) {
-            UUID playerUUID = UUID.fromString(whitelistResult.getString("player_uuid"));
-            whitelistedPlayers.add(playerUUID);
+            String playerName = whitelistResult.getString("player_name");
+            whitelistedPlayers.add(playerName);
         }
         return whitelistedPlayers;
     }
@@ -145,12 +145,12 @@ public class DatabaseOperations {
         }
 
         if(!region.getWhitelistedPlayers().isEmpty()) {
-            String insertWhitelistSql = "INSERT INTO region_whitelist (region_name, player_uuid) VALUES (?, ?)";
+            String insertWhitelistSql = "INSERT INTO region_whitelist (region_name, player_name) VALUES (?, ?)";
             PreparedStatement insertWhitelistStmt = connection.prepareStatement(insertWhitelistSql);
 
-            for (UUID playerUUID : region.getWhitelistedPlayers()) {
+            for (String playerName : region.getWhitelistedPlayers()) {
                 insertWhitelistStmt.setString(1, region.getName());
-                insertWhitelistStmt.setString(2, playerUUID.toString());
+                insertWhitelistStmt.setString(2, playerName);
                 insertWhitelistStmt.executeUpdate();
             }
         }
@@ -183,24 +183,24 @@ public class DatabaseOperations {
         statement.executeUpdate();
     }
 
-    public void addPlayerToWhitelist(String regionName, UUID playerUUID) throws Exception {
-        String sql = "INSERT INTO region_whitelist (region_name, player_uuid) VALUES (?, ?)";
+    public void addPlayerToWhitelist(String regionName, String playerName) throws Exception {
+        String sql = "INSERT INTO region_whitelist (region_name, player_name) VALUES (?, ?)";
         Connection connection = hikariDataSource.getConnection();
         PreparedStatement statement = connection.prepareStatement(sql);
 
         statement.setString(1, regionName);
-        statement.setString(2, playerUUID.toString());
+        statement.setString(2, playerName);
         statement.executeUpdate();
 
     }
 
-    public void removePlayerFromWhitelist(String regionName, UUID playerUUID) throws Exception {
-        String sql = "DELETE FROM region_whitelist WHERE region_name = ? AND player_uuid = ?";
+    public void removePlayerFromWhitelist(String regionName, String playerName) throws Exception {
+        String sql = "DELETE FROM region_whitelist WHERE region_name = ? AND player_name = ?";
         Connection connection = hikariDataSource.getConnection();
         PreparedStatement statement = connection.prepareStatement(sql);
 
         statement.setString(1, regionName);
-        statement.setString(2, playerUUID.toString());
+        statement.setString(2, playerName);
         statement.executeUpdate();
     }
 }

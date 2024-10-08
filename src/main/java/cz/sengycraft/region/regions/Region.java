@@ -14,7 +14,7 @@ public class Region {
     private Location pos1;
     private Location pos2;
     private Map<Flag, FlagState> flags = new HashMap<>();
-    private List<UUID> whitelistedPlayers = new ArrayList<>();
+    private List<String> whitelistedPlayers = new ArrayList<>();
 
     DatabaseOperations databaseOperations = DatabaseOperations.getInstance();
 
@@ -25,7 +25,7 @@ public class Region {
         addFlags(FlagRegistry.getInstance().getFlags().toArray(Flag[]::new));
     }
 
-    public Region(String name, Location pos1, Location pos2, Map<Flag, FlagState> flags, List<UUID> whitelistedPlayers) {
+    public Region(String name, Location pos1, Location pos2, Map<Flag, FlagState> flags, List<String> whitelistedPlayers) {
         this.name = name;
         this.pos1 = pos1;
         this.pos2 = pos2;
@@ -70,12 +70,18 @@ public class Region {
         }
     }
 
-    public List<UUID> getWhitelistedPlayers() {
+    public List<String> getWhitelistedPlayers() {
         return whitelistedPlayers;
     }
 
-    public void addWhitelistedPlayer(UUID whitelistedPlayer) {
+    public void addWhitelistedPlayer(String whitelistedPlayer) throws Exception {
         this.whitelistedPlayers.add(whitelistedPlayer);
+        databaseOperations.addPlayerToWhitelist(name, whitelistedPlayer);
+    }
+
+    public void removeWhitelistedPlayer(String whitelistedPlayer) throws Exception {
+        this.whitelistedPlayers.remove(whitelistedPlayer);
+        databaseOperations.removePlayerFromWhitelist(name, whitelistedPlayer);
     }
 
     public boolean isPlayerWhitelisted(UUID player) {
