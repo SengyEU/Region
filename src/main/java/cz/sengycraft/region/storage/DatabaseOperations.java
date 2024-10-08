@@ -203,4 +203,15 @@ public class DatabaseOperations {
         statement.setString(2, playerName);
         statement.executeUpdate();
     }
+
+    public void updateFlagState(String regionName, String flagName, FlagState state) throws Exception {
+        String sql = "UPDATE region_flags SET state = ? WHERE region_name = ? AND flag = ?";
+        try (Connection connection = hikariDataSource.getConnection()) {
+            PreparedStatement statement = connection.prepareStatement(sql);
+            statement.setString(1, state.name());
+            statement.setString(2, regionName);
+            statement.setString(3, flagName);
+            statement.executeUpdate();
+        }
+    }
 }

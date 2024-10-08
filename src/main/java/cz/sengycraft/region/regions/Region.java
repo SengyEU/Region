@@ -84,8 +84,13 @@ public class Region {
         databaseOperations.removePlayerFromWhitelist(name, whitelistedPlayer);
     }
 
-    public boolean isPlayerWhitelisted(UUID player) {
+    public boolean isPlayerWhitelisted(String player) {
         return whitelistedPlayers.contains(player);
+    }
+
+    public void changeState(String flag, FlagState state) throws Exception {
+        flags.put(new Flag(flag), state);
+        databaseOperations.updateFlagState(this.name, flag, state);
     }
 
     @Override

@@ -3,6 +3,9 @@ package cz.sengycraft.region.commands;
 import cz.sengycraft.region.RegionPlugin;
 import cz.sengycraft.region.regions.Region;
 import cz.sengycraft.region.regions.RegionManager;
+import cz.sengycraft.region.regions.flags.Flag;
+import cz.sengycraft.region.regions.flags.FlagRegistry;
+import cz.sengycraft.region.regions.flags.FlagState;
 import cz.sengycraft.region.regions.wand.WandManager;
 import cz.sengycraft.region.utils.MessageUtils;
 import cz.sengycraft.region.utils.Pair;
@@ -15,8 +18,8 @@ import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -37,152 +40,216 @@ public class RegionCommand implements TabExecutor {
             return false;
         }
 
-        switch (args.length) {
-            case 1 -> {
-                switch (args[0]) {
-                    case "wand" -> {
-                        if(Arrays.stream(player.getInventory().getStorageContents()).noneMatch(Objects::isNull)) {
-                            MessageUtils.sendMessage(player, "no-inventory-space");
-                            return false;
-                        }
+        RegionManager regionManager = RegionManager.getInstance();
+        WandManager wandManager = WandManager.getInstance();
+        FlagRegistry flagRegistry = FlagRegistry.getInstance();
 
-                        player.getInventory().addItem(WandManager.getInstance().getWand());
-                        MessageUtils.sendMessage(player, "give-wand");
+        if (args.length < 1) {
+            MessageUtils.sendMessage(player, "invalid-usage");
+            return false;
+        }
+
+        String subCommand = args[0].toLowerCase();
+
+        switch (subCommand) {
+            case "wand" -> {
+                if (args.length == 1) {
+                    if (isInventoryFull(player)) {
+                        MessageUtils.sendMessage(player, "no-inventory-space");
+                        return false;
                     }
+
+                    player.getInventory().addItem(wandManager.getWand());
+                    MessageUtils.sendMessage(player, "give-wand");
+                    return true;
                 }
             }
-            case 2 -> {
-                switch (args [0]) {
-                    case "create" -> {
-                        Location[] loc = WandManager.getInstance().getLocations(player.getUniqueId());
-
-                        if(loc == null || loc[0] == null || loc[1] == null) {
-                            MessageUtils.sendMessage(player, "locations-not-set");
-                            return false;
-                        }
-
-                        if(!loc[0].getWorld().getName().equalsIgnoreCase(loc[1].getWorld().getName())) {
-                            MessageUtils.sendMessage(player, "not-in-same-world");
-                            return false;
-                        }
-
-                        String name = args[1].toLowerCase();
-                        try {
-                            if(!RegionManager.getInstance().addRegions(new Region(name, loc[0], loc[1]))) {
-                                MessageUtils.sendMessage(player, "region-name-exists");
-                                return false;
-                            }
-                            MessageUtils.sendMessage(player, "region-created", new Pair<>("{region}", name));
-                            WandManager.getInstance().clearLocations(player.getUniqueId());
-                        } catch (Exception e) {
-                            MessageUtils.sendMessage(player, "region-error");
-                            plugin.getComponentLogger().error("Error when editing the region!", e);
-                            return false;
-                        }
-                    }
-                    case "whitelist" -> {
-                        String name = args[1].toLowerCase();
-
-                        List<String> names = RegionManager.getInstance().getNames();
-                        if(!names.contains(name)) {
-                            MessageUtils.sendMessage(player, "region-not-exists");
-                            return false;
-                        }
-
-                        MessageUtils.sendMessage(player, "whitelist.title", new Pair<>("{region}", name));
-                        for(String playerName : RegionManager.getInstance().getRegion(name).getWhitelistedPlayers()) {
-                            MessageUtils.sendMessage(player, "whitelist.player", new Pair<>("{player}", playerName));
-                        }
-                    }
+            case "create" -> {
+                if (args.length == 2) {
+                    return handleCreateCommand(player, args[1].toLowerCase(), wandManager, regionManager);
                 }
             }
-            case 3 -> {
-                switch (args [0]) {
-                    case "add" -> {
-                        String name = args[1].toLowerCase();
-
-                        List<String> names = RegionManager.getInstance().getNames();
-                        if(!names.contains(name)) {
-                            MessageUtils.sendMessage(player, "region-not-exists");
-                            return false;
-                        }
-
-                        if(RegionManager.getInstance().getRegion(name).getWhitelistedPlayers().contains(args[2])) {
-                            MessageUtils.sendMessage(player, "whitelist.already");
-                            return false;
-                        }
-
-                        try {
-                            RegionManager.getInstance().getRegion(name).addWhitelistedPlayer(args[2]);
-                            MessageUtils.sendMessage(player, "whitelist.added", new Pair<>("{region}", name), new Pair<>("{player}", args[2]));
-                        } catch (Exception e) {
-                            MessageUtils.sendMessage(player, "region-error");
-                            plugin.getComponentLogger().error("Error when editing the region!", e);
-                            return false;
-                        }
-                    }
-                    case "remove" -> {
-                        String name = args[1].toLowerCase();
-
-                        List<String> names = RegionManager.getInstance().getNames();
-                        if(!names.contains(name)) {
-                            MessageUtils.sendMessage(player, "region-not-exists");
-                            return false;
-                        }
-
-                        if(!RegionManager.getInstance().getRegion(name).getWhitelistedPlayers().contains(args[2])) {
-                            MessageUtils.sendMessage(player, "whitelist.not");
-                            return false;
-                        }
-
-                        try {
-                            RegionManager.getInstance().getRegion(name).removeWhitelistedPlayer(args[2]);
-                            MessageUtils.sendMessage(player, "whitelist.removed", new Pair<>("{region}", name), new Pair<>("{player}", args[2]));
-                        } catch (Exception e) {
-                            MessageUtils.sendMessage(player, "region-error");
-                            plugin.getComponentLogger().error("Error when editing the region!", e);
-                            return false;
-                        }
-                    }
+            case "whitelist" -> {
+                if (args.length == 2) {
+                    return handleWhitelistCommand(player, args[1].toLowerCase(), regionManager);
+                }
+            }
+            case "add", "remove" -> {
+                if (args.length == 3) {
+                    return handleWhitelistModification(player, subCommand, args[1].toLowerCase(), args[2], regionManager);
+                }
+            }
+            case "flag" -> {
+                if (args.length == 4) {
+                    return handleFlagCommand(player, args[1].toLowerCase(), args[2], args[3], regionManager, flagRegistry);
                 }
             }
         }
 
+        MessageUtils.sendMessage(player, "invalid-usage");
         return true;
     }
 
+    private boolean isInventoryFull(Player player) {
+        return Arrays.stream(player.getInventory().getStorageContents()).noneMatch(Objects::isNull);
+    }
+
+    private boolean handleCreateCommand(Player player, String regionName, WandManager wandManager, RegionManager regionManager) {
+        Location[] loc = wandManager.getLocations(player.getUniqueId());
+
+        if (loc == null || loc[0] == null || loc[1] == null) {
+            MessageUtils.sendMessage(player, "locations-not-set");
+            return false;
+        }
+
+        if (!loc[0].getWorld().getName().equalsIgnoreCase(loc[1].getWorld().getName())) {
+            MessageUtils.sendMessage(player, "not-in-same-world");
+            return false;
+        }
+
+        try {
+            if (!regionManager.addRegions(new Region(regionName, loc[0], loc[1]))) {
+                MessageUtils.sendMessage(player, "region-name-exists");
+                return false;
+            }
+            MessageUtils.sendMessage(player, "region-created", new Pair<>("{region}", regionName));
+            wandManager.clearLocations(player.getUniqueId());
+            return true;
+        } catch (Exception e) {
+            MessageUtils.sendMessage(player, "region-error");
+            plugin.getComponentLogger().error("Error when creating the region!", e);
+            return false;
+        }
+    }
+
+    private boolean handleWhitelistCommand(Player player, String regionName, RegionManager regionManager) {
+        if (regionDoesntExist(regionName, regionManager)) {
+            MessageUtils.sendMessage(player, "region-not-exists");
+            return false;
+        }
+
+        Region region = regionManager.getRegion(regionName);
+        MessageUtils.sendMessage(player, "whitelist.title", new Pair<>("{region}", regionName));
+        for (String whitelistedPlayer : region.getWhitelistedPlayers()) {
+            MessageUtils.sendMessage(player, "whitelist.player", new Pair<>("{player}", whitelistedPlayer));
+        }
+        return true;
+    }
+
+    private boolean handleWhitelistModification(Player player, String action, String regionName, String targetPlayer, RegionManager regionManager) {
+        if (regionDoesntExist(regionName, regionManager)) {
+            MessageUtils.sendMessage(player, "region-not-exists");
+            return false;
+        }
+
+        Region region = regionManager.getRegion(regionName);
+
+        if (action.equals("add")) {
+            if (region.getWhitelistedPlayers().contains(targetPlayer)) {
+                MessageUtils.sendMessage(player, "whitelist.already");
+                return false;
+            }
+
+            try {
+                region.addWhitelistedPlayer(targetPlayer);
+                MessageUtils.sendMessage(player, "whitelist.added", new Pair<>("{region}", regionName), new Pair<>("{player}", targetPlayer));
+                return true;
+            } catch (Exception e) {
+                MessageUtils.sendMessage(player, "region-error");
+                plugin.getComponentLogger().error("Error adding player to whitelist!", e);
+                return false;
+            }
+        } else if (action.equals("remove")) {
+            if (!region.getWhitelistedPlayers().contains(targetPlayer)) {
+                MessageUtils.sendMessage(player, "whitelist.not");
+                return false;
+            }
+
+            try {
+                region.removeWhitelistedPlayer(targetPlayer);
+                MessageUtils.sendMessage(player, "whitelist.removed", new Pair<>("{region}", regionName), new Pair<>("{player}", targetPlayer));
+                return true;
+            } catch (Exception e) {
+                MessageUtils.sendMessage(player, "region-error");
+                plugin.getComponentLogger().error("Error removing player from whitelist!", e);
+                return false;
+            }
+        }
+
+        return false;
+    }
+
+    private boolean handleFlagCommand(Player player, String regionName, String flag, String state, RegionManager regionManager, FlagRegistry flagRegistry) {
+        if (regionDoesntExist(regionName, regionManager)) {
+            MessageUtils.sendMessage(player, "region-not-exists");
+            return false;
+        }
+
+        if (!flagRegistry.getFlags().stream().map(Flag::getName).toList().contains(flag)) {
+            MessageUtils.sendMessage(player, "flag.invalid-flag");
+            return false;
+        }
+
+        if (!List.of("EVERYONE", "WHITELIST", "NONE").contains(state.toUpperCase())) {
+            MessageUtils.sendMessage(player, "flag.invalid-state");
+            return false;
+        }
+
+        try {
+            regionManager.getRegion(regionName).changeState(flag, FlagState.valueOf(state.toUpperCase()));
+            MessageUtils.sendMessage(player, "flag.changed", new Pair<>("{region}", regionName), new Pair<>("{flag}", flag), new Pair<>("{state}", state.toUpperCase()));
+            return true;
+        } catch (Exception e) {
+            MessageUtils.sendMessage(player, "region-error");
+            plugin.getComponentLogger().error("Error when changing flag state!", e);
+            return false;
+        }
+    }
+
+    private boolean regionDoesntExist(String regionName, RegionManager regionManager) {
+        return !regionManager.getNames().contains(regionName.toLowerCase());
+    }
+
+
     @Override
     public @Nullable List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
+        if (args.length == 0) return Collections.emptyList();
+
+        RegionManager regionManager = RegionManager.getInstance();
+        FlagRegistry flagRegistry = FlagRegistry.getInstance();
+
         switch (args.length) {
             case 1 -> {
-                return Arrays.asList("wand", "create", "whitelist", "add", "remove");
+                return List.of("wand", "create", "whitelist", "add", "remove", "flag");
             }
             case 2 -> {
-                switch (args[0]) {
-                     case "create" -> {
-                        return List.of("<name>");
-                    }
-                    case "whitelist", "add", "remove" -> {
-                         return RegionManager.getInstance().getNames();
-                    }
-                }
+                return switch (args[0]) {
+                    case "create" -> List.of("<name>");
+                    case "whitelist", "add", "remove", "flag" -> regionManager.getNames();
+                    default -> Collections.emptyList();
+                };
             }
             case 3 -> {
-                switch (args[0]) {
-                    case "add" -> {
-                        return Bukkit.getServer().getOnlinePlayers()
-                                .stream()
-                                .map(Player::getName)
-                                .filter(string -> !RegionManager.getInstance().getRegion(args[1]).getWhitelistedPlayers().contains(string))
-                                .collect(Collectors.toList());
-                    }
-                    case "remove" -> {
-                        return RegionManager.getInstance().getRegion(args[1]).getWhitelistedPlayers();
-                    }
+                return switch (args[0]) {
+                    case "add" -> Bukkit.getServer().getOnlinePlayers().stream()
+                            .map(Player::getName)
+                            .filter(playerName -> !regionManager.getRegion(args[1]).getWhitelistedPlayers().contains(playerName))
+                            .collect(Collectors.toList());
+                    case "remove" -> regionManager.getRegion(args[1]).getWhitelistedPlayers();
+                    case "flag" -> flagRegistry.getFlags().stream()
+                            .map(Flag::getName)
+                            .collect(Collectors.toList());
+                    default -> Collections.emptyList();
+                };
+            }
+            case 4 -> {
+                if ("flag".equals(args[0])) {
+                    return List.of("EVERYONE", "WHITELIST", "NONE");
                 }
             }
         }
 
-        return new ArrayList<>();
+        return Collections.emptyList();
     }
+
 }

@@ -16,3 +16,7 @@ whitelist:
   already: "<red>Player is already whitelisted!"
   not: "<red>Player is not whitelisted!"
   removed: "<green>Player {player} removed from whitelist of region {region}"
+flag:
+  changed: "<green>Changed state of flag {flag} to {state} in region {region}"
+  invalid-state: "<red>Invalid state!"
+  invalid-flag: "<red>Invalid flag!"
