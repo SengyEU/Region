@@ -3,6 +3,7 @@ package cz.sengycraft.region;
 import cz.sengycraft.region.api.RegionAPI;
 import cz.sengycraft.region.commands.RegionCommand;
 import cz.sengycraft.region.configuration.ConfigurationManager;
+import cz.sengycraft.region.listeners.FlagsListeners;
 import cz.sengycraft.region.regions.RegionManager;
 import cz.sengycraft.region.regions.flags.Flag;
 import cz.sengycraft.region.regions.flags.FlagRegistry;
@@ -26,6 +27,7 @@ public final class RegionPlugin extends JavaPlugin {
         regionAPI = new RegionAPI();
 
         getServer().getPluginManager().registerEvents(WandManager.getInstance(), this);
+        getServer().getPluginManager().registerEvents(new FlagsListeners(), this);
         getCommand("region").setExecutor(new RegionCommand(this));
 
         FlagRegistry.getInstance().addFlags(

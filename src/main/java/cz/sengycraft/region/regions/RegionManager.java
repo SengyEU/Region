@@ -39,6 +39,10 @@ public class RegionManager {
         regions.addAll(DatabaseOperations.getInstance().getAllRegions());
     }
 
+    public Set<Region> getRegions() {
+        return regions;
+    }
+
     public boolean addRegions(Region ... regions) throws Exception {
         for(Region region : regions) {
             if(createRegion(region)) return true;
