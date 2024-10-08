@@ -4,6 +4,10 @@ main: cz.sengycraft.region.RegionPlugin
 description: 'A plugin to create and manage regions, only whitelisted users can interact in the region'
 api-version: '1.21'
 
+commands:
+  region:
+    description: "Main command of the Region plugin"
+
 permissions:
   region.menu:
     description: 'Access to /region command'

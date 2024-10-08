@@ -17,3 +17,5 @@ database:
 
 regions:
   default-state: WHITELIST # EVERYONE, WHITELIST, NONE
+  wand:
+    item-name: "<green>Selection wand"

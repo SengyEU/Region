@@ -5,7 +5,7 @@ public class Flag {
     String name;
 
     public Flag(String name) {
-        this.name = name;
+        this.name = name.toLowerCase();
     }
 
     public String getName() {

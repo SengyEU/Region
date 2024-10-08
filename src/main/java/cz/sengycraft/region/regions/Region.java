@@ -81,4 +81,17 @@ public class Region {
     public boolean isPlayerWhitelisted(UUID player) {
         return whitelistedPlayers.contains(player);
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Region flag = (Region) o;
+        return name.equals(flag.name);
+    }
+
+    @Override
+    public int hashCode() {
+        return name.hashCode();
+    }
 }

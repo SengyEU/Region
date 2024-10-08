@@ -45,37 +45,53 @@ public class DatabaseManager {
         }
     }
 
-    private void initializeTables () throws SQLException {
+    private void initializeTables() throws SQLException {
         Connection connection = hikariDataSource.getConnection();
-        String query = """
-                CREATE TABLE IF NOT EXISTS regions (
-                    name VARCHAR(255) PRIMARY KEY,
-                    pos1X DOUBLE,
-                    pos1Y DOUBLE,
-                    pos1Z DOUBLE,
-                    pos1World VARCHAR(255),
-                    pos2X DOUBLE,
-                    pos2Y DOUBLE,
-                    pos2Z DOUBLE,
-                    pos2World VARCHAR(255)
-                );
-                CREATE TABLE IF NOT EXISTS region_flags (
-                    region_name VARCHAR(255),
-                    flag VARCHAR(255),
-                    state VARCHAR(255),
-                    FOREIGN KEY (region_name) REFERENCES regions(name) ON DELETE CASCADE
-                );
-                CREATE TABLE IF NOT EXISTS region_whitelist (
-                    region_name VARCHAR(255),
-                    player_uuid VARCHAR(255),
-                    FOREIGN KEY (region_name) REFERENCES regions(name) ON DELETE CASCADE
-                );
-                """;
-        PreparedStatement statement = connection.prepareStatement(query);
-        statement.executeUpdate();
+
+        String createRegionsTable = """
+            CREATE TABLE IF NOT EXISTS regions (
+                name VARCHAR(255) PRIMARY KEY,
+                pos1X DOUBLE,
+                pos1Y DOUBLE,
+                pos1Z DOUBLE,
+                pos1World VARCHAR(255),
+                pos2X DOUBLE,
+                pos2Y DOUBLE,
+                pos2Z DOUBLE,
+                pos2World VARCHAR(255)
+            );
+            """;
+
+        String createRegionFlagsTable = """
+            CREATE TABLE IF NOT EXISTS region_flags (
+                region_name VARCHAR(255),
+                flag VARCHAR(255),
+                state VARCHAR(255),
+                FOREIGN KEY (region_name) REFERENCES regions(name) ON DELETE CASCADE
+            );
+            """;
+
+        String createRegionWhitelistTable = """
+            CREATE TABLE IF NOT EXISTS region_whitelist (
+                region_name VARCHAR(255),
+                player_uuid VARCHAR(255),
+                FOREIGN KEY (region_name) REFERENCES regions(name) ON DELETE CASCADE
+            );
+            """;
+
+
+        PreparedStatement statement1 = connection.prepareStatement(createRegionsTable);
+        PreparedStatement statement2 = connection.prepareStatement(createRegionFlagsTable);
+        PreparedStatement statement3 = connection.prepareStatement(createRegionWhitelistTable);
+
+
+        statement1.executeUpdate();
+        statement2.executeUpdate();
+        statement3.executeUpdate();
 
         connection.close();
     }
+
 
     private HikariConfig getHikariConfig() {
 

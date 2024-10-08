@@ -11,6 +11,7 @@ import org.bukkit.Location;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.*;
 
 public class DatabaseOperations {
@@ -26,60 +27,85 @@ public class DatabaseOperations {
     HikariDataSource hikariDataSource = databaseManager.getHikariDataSource();
     RegionPlugin plugin = databaseManager.getPlugin();
 
-    public Region getRegion(String regionName) throws Exception {
+    public Set<Region> getAllRegions() throws Exception {
+        Set<Region> allRegions = new HashSet<>();
+        try (Connection connection = hikariDataSource.getConnection()) {
+            PreparedStatement regionStatement = connection.prepareStatement("SELECT * FROM regions");
+            ResultSet regionResult = regionStatement.executeQuery();
 
+            while (regionResult.next()) {
+                String regionName = regionResult.getString("name");
+                Location pos1 = createLocation(regionResult, "pos1");
+                Location pos2 = createLocation(regionResult, "pos2");
+
+                Map<Flag, FlagState> flags = loadFlags(connection, regionName);
+                List<UUID> whitelistedPlayers = loadWhitelistedPlayers(connection, regionName);
+
+                allRegions.add(new Region(regionName, pos1, pos2, flags, whitelistedPlayers));
+            }
+        }
+        return allRegions;
+    }
+
+    public Region getRegion(String regionName) throws Exception {
         Location pos1 = null;
         Location pos2 = null;
-        Map<Flag, FlagState> flags = new HashMap<>();
-        List<UUID> whitelistedPlayers = new ArrayList<>();
+        Map<Flag, FlagState> flags;
+        List<UUID> whitelistedPlayers;
 
-       Connection connection = hikariDataSource.getConnection();
-       PreparedStatement regionStatement = connection.prepareStatement("SELECT * FROM regions WHERE name = ?");
+        try (Connection connection = hikariDataSource.getConnection()) {
+            PreparedStatement regionStatement = connection.prepareStatement("SELECT * FROM regions WHERE name = ?");
+            regionStatement.setString(1, regionName);
+            ResultSet regionResult = regionStatement.executeQuery();
 
-       regionStatement.setString(1, regionName);
-       ResultSet regionResult = regionStatement.executeQuery();
+            if (regionResult.next()) {
+                pos1 = createLocation(regionResult, "pos1");
+                pos2 = createLocation(regionResult, "pos2");
+            }
 
-       if (regionResult.next()) {
-           String world = regionResult.getString("pos1World");
-           pos1 = new Location(
-                   Bukkit.getWorld(world),
-                   regionResult.getDouble("pos1X"),
-                   regionResult.getDouble("pos1Y"),
-                   regionResult.getDouble("pos1Z")
-           );
+            flags = loadFlags(connection, regionName);
+            whitelistedPlayers = loadWhitelistedPlayers(connection, regionName);
+        }
 
-           world = regionResult.getString("pos2World");
-           pos2 = new Location(
-                   Bukkit.getWorld(world),
-                   regionResult.getDouble("pos2X"),
-                   regionResult.getDouble("pos2Y"),
-                   regionResult.getDouble("pos2Z")
-           );
-       }
-
-       PreparedStatement flagStatement = connection.prepareStatement("SELECT * FROM region_flags WHERE region_name = ?");
-
-       flagStatement.setString(1, regionName);
-       ResultSet flagResult = flagStatement.executeQuery();
-
-       while (flagResult.next()) {
-           Flag flag = new Flag(flagResult.getString("flag"));
-           FlagState flagState = FlagState.valueOf(flagResult.getString("state"));
-           flags.put(flag, flagState);
-       }
-
-       PreparedStatement whitelistStatement = connection.prepareStatement("SELECT * FROM region_whitelist WHERE region_name = ?");
-
-       whitelistStatement.setString(1, regionName);
-       ResultSet whitelistResult = whitelistStatement.executeQuery();
-
-       while (whitelistResult.next()) {
-           UUID playerUUID = UUID.fromString(whitelistResult.getString("player_uuid"));
-           whitelistedPlayers.add(playerUUID);
-       }
-
-       return new Region(regionName, pos1, pos2, flags, whitelistedPlayers);
+        return new Region(regionName, pos1, pos2, flags, whitelistedPlayers);
     }
+
+    private Location createLocation(ResultSet resultSet, String posPrefix) throws SQLException {
+        return new Location(
+                Bukkit.getWorld(resultSet.getString(posPrefix + "World")),
+                resultSet.getDouble(posPrefix + "X"),
+                resultSet.getDouble(posPrefix + "Y"),
+                resultSet.getDouble(posPrefix + "Z")
+        );
+    }
+
+    private Map<Flag, FlagState> loadFlags(Connection connection, String regionName) throws SQLException {
+        Map<Flag, FlagState> flags = new HashMap<>();
+        PreparedStatement flagStatement = connection.prepareStatement("SELECT * FROM region_flags WHERE region_name = ?");
+        flagStatement.setString(1, regionName);
+        ResultSet flagResult = flagStatement.executeQuery();
+
+        while (flagResult.next()) {
+            Flag flag = new Flag(flagResult.getString("flag"));
+            FlagState flagState = FlagState.valueOf(flagResult.getString("state"));
+            flags.put(flag, flagState);
+        }
+        return flags;
+    }
+
+    private List<UUID> loadWhitelistedPlayers(Connection connection, String regionName) throws SQLException {
+        List<UUID> whitelistedPlayers = new ArrayList<>();
+        PreparedStatement whitelistStatement = connection.prepareStatement("SELECT * FROM region_whitelist WHERE region_name = ?");
+        whitelistStatement.setString(1, regionName);
+        ResultSet whitelistResult = whitelistStatement.executeQuery();
+
+        while (whitelistResult.next()) {
+            UUID playerUUID = UUID.fromString(whitelistResult.getString("player_uuid"));
+            whitelistedPlayers.add(playerUUID);
+        }
+        return whitelistedPlayers;
+    }
+
 
     public void updateRegionName(String regionName, String newName) throws Exception {
         String sql = "UPDATE regions SET name = ? WHERE name = ?";
@@ -115,17 +141,19 @@ public class DatabaseOperations {
             insertFlagStmt.setString(1, region.getName());
             insertFlagStmt.setString(2, entry.getKey().getName());
             insertFlagStmt.setString(3, entry.getValue().toString());
+            insertFlagStmt.executeUpdate();
         }
-        insertFlagStmt.executeUpdate();
 
-        String insertWhitelistSql = "INSERT INTO region_whitelist (region_name, player_uuid) VALUES (?, ?)";
-        PreparedStatement insertWhitelistStmt = connection.prepareStatement(insertWhitelistSql);
+        if(!region.getWhitelistedPlayers().isEmpty()) {
+            String insertWhitelistSql = "INSERT INTO region_whitelist (region_name, player_uuid) VALUES (?, ?)";
+            PreparedStatement insertWhitelistStmt = connection.prepareStatement(insertWhitelistSql);
 
-        for (UUID playerUUID : region.getWhitelistedPlayers()) {
-            insertWhitelistStmt.setString(1, region.getName());
-            insertWhitelistStmt.setString(2, playerUUID.toString());
+            for (UUID playerUUID : region.getWhitelistedPlayers()) {
+                insertWhitelistStmt.setString(1, region.getName());
+                insertWhitelistStmt.setString(2, playerUUID.toString());
+                insertWhitelistStmt.executeUpdate();
+            }
         }
-        insertWhitelistStmt.executeUpdate();
     }
 
     public void updateRegionPos(String regionName, boolean isPos1, Location loc) throws Exception {

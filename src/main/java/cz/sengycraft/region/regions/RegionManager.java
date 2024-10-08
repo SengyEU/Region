@@ -5,8 +5,8 @@ import cz.sengycraft.region.regions.flags.Flag;
 import cz.sengycraft.region.regions.flags.FlagState;
 import cz.sengycraft.region.storage.DatabaseOperations;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 public class RegionManager {
 
@@ -18,7 +18,7 @@ public class RegionManager {
         return instance;
     }
 
-    private List<Region> regions = new ArrayList<>();
+    private Set<Region> regions = new HashSet<>();
 
     public void addFlags(Flag ... flags) {
         for(Region region : regions) {
@@ -33,13 +33,25 @@ public class RegionManager {
                 .orElse(null);
     }
 
-    public void addRegions(Region ... regions) {
-        this.regions.addAll(List.of(regions));
+    public void addAllRegions() throws Exception {
+        regions.addAll(DatabaseOperations.getInstance().getAllRegions());
     }
 
-    public void createRegion(Region region) throws Exception {
-        regions.add(region);
-        DatabaseOperations.getInstance().saveRegion(region);
+    public boolean addRegions(Region ... regions) throws Exception {
+        for(Region region : regions) {
+            if(createRegion(region)) return true;
+        }
+
+        return false;
+    }
+
+    public boolean createRegion(Region region) throws Exception {
+        if(regions.add(region)) {
+            DatabaseOperations.getInstance().saveRegion(region);
+            return true;
+        }
+
+        return false;
     }
 
     public void deleteRegion(String name) throws Exception {
