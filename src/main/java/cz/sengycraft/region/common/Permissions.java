@@ -9,8 +9,7 @@ public enum Permissions {
     WHITELIST("whitelist"),
     CREATE("create"),
     FLAG("flag"),
-    BYPASS("bypass"),
-    RELOAD("reload");
+    BYPASS("bypass");
 
     private final String permission;
 

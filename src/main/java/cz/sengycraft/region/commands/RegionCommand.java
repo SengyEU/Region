@@ -1,6 +1,7 @@
 package cz.sengycraft.region.commands;
 
 import cz.sengycraft.region.RegionPlugin;
+import cz.sengycraft.region.common.Permissions;
 import cz.sengycraft.region.regions.Region;
 import cz.sengycraft.region.regions.RegionManager;
 import cz.sengycraft.region.regions.flags.Flag;
@@ -53,6 +54,10 @@ public class RegionCommand implements TabExecutor {
 
         switch (subCommand) {
             case "wand" -> {
+                if (!player.hasPermission(Permissions.WAND.permission())) {
+                    MessageUtils.sendMessage(player, "no-permission");
+                    return false;
+                }
                 if (args.length == 1) {
                     if (isInventoryFull(player)) {
                         MessageUtils.sendMessage(player, "no-inventory-space");
@@ -65,21 +70,37 @@ public class RegionCommand implements TabExecutor {
                 }
             }
             case "create" -> {
+                if (!player.hasPermission(Permissions.CREATE.permission())) {
+                    MessageUtils.sendMessage(player, "no-permission");
+                    return false;
+                }
                 if (args.length == 2) {
                     return handleCreateCommand(player, args[1].toLowerCase(), wandManager, regionManager);
                 }
             }
             case "whitelist" -> {
+                if (!player.hasPermission(Permissions.WHITELIST.permission())) {
+                    MessageUtils.sendMessage(player, "no-permission");
+                    return false;
+                }
                 if (args.length == 2) {
                     return handleWhitelistCommand(player, args[1].toLowerCase(), regionManager);
                 }
             }
             case "add", "remove" -> {
+                if (!player.hasPermission(subCommand.equals("add") ? Permissions.ADD.permission() : Permissions.REMOVE.permission())) {
+                    MessageUtils.sendMessage(player, "no-permission");
+                    return false;
+                }
                 if (args.length == 3) {
                     return handleWhitelistModification(player, subCommand, args[1].toLowerCase(), args[2], regionManager);
                 }
             }
             case "flag" -> {
+                if (!player.hasPermission(Permissions.FLAG.permission())) {
+                    MessageUtils.sendMessage(player, "no-permission");
+                    return false;
+                }
                 if (args.length == 4) {
                     return handleFlagCommand(player, args[1].toLowerCase(), args[2], args[3], regionManager, flagRegistry);
                 }
@@ -89,6 +110,7 @@ public class RegionCommand implements TabExecutor {
         MessageUtils.sendMessage(player, "invalid-usage");
         return true;
     }
+
 
     private boolean isInventoryFull(Player player) {
         return Arrays.stream(player.getInventory().getStorageContents()).noneMatch(Objects::isNull);

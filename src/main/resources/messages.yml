@@ -1,3 +1,4 @@
+no-permission: "<red>You don't have permission to do that!"
 only-players: "<red>Only players can run this command!"
 invalid-usage: "<red>Invalid usage!"
 location-set: "<green>Location {loc} set at {x}, {y}, {z}, {world}"
