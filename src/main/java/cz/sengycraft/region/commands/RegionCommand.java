@@ -19,11 +19,7 @@ import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
-import java.util.stream.Collectors;
+import java.util.*;
 
 public class RegionCommand implements TabExecutor {
 
@@ -36,17 +32,12 @@ public class RegionCommand implements TabExecutor {
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
 
-        if (!(sender instanceof Player player)) {
-            MessageUtils.sendMessage(sender, "only-players");
-            return false;
-        }
-
         RegionManager regionManager = RegionManager.getInstance();
         WandManager wandManager = WandManager.getInstance();
         FlagRegistry flagRegistry = FlagRegistry.getInstance();
 
         if (args.length < 1) {
-            MessageUtils.sendMessage(player, "invalid-usage");
+            MessageUtils.sendMessage(sender, "invalid-usage");
             return false;
         }
 
@@ -54,7 +45,13 @@ public class RegionCommand implements TabExecutor {
 
         switch (subCommand) {
             case "wand" -> {
-                if (!player.hasPermission(Permissions.WAND.permission())) {
+
+                if (!(sender instanceof Player player)) {
+                    MessageUtils.sendMessage(sender, "only-players");
+                    return false;
+                }
+
+                if (!sender.hasPermission(Permissions.WAND.permission())) {
                     MessageUtils.sendMessage(player, "no-permission");
                     return false;
                 }
@@ -70,6 +67,12 @@ public class RegionCommand implements TabExecutor {
                 }
             }
             case "create" -> {
+
+                if (!(sender instanceof Player player)) {
+                    MessageUtils.sendMessage(sender, "only-players");
+                    return false;
+                }
+
                 if (!player.hasPermission(Permissions.CREATE.permission())) {
                     MessageUtils.sendMessage(player, "no-permission");
                     return false;
@@ -79,35 +82,35 @@ public class RegionCommand implements TabExecutor {
                 }
             }
             case "whitelist" -> {
-                if (!player.hasPermission(Permissions.WHITELIST.permission())) {
-                    MessageUtils.sendMessage(player, "no-permission");
+                if (!sender.hasPermission(Permissions.WHITELIST.permission())) {
+                    MessageUtils.sendMessage(sender, "no-permission");
                     return false;
                 }
                 if (args.length == 2) {
-                    return handleWhitelistCommand(player, args[1].toLowerCase(), regionManager);
+                    return handleWhitelistCommand(sender, args[1].toLowerCase(), regionManager);
                 }
             }
             case "add", "remove" -> {
-                if (!player.hasPermission(subCommand.equals("add") ? Permissions.ADD.permission() : Permissions.REMOVE.permission())) {
-                    MessageUtils.sendMessage(player, "no-permission");
+                if (!sender.hasPermission(subCommand.equals("add") ? Permissions.ADD.permission() : Permissions.REMOVE.permission())) {
+                    MessageUtils.sendMessage(sender, "no-permission");
                     return false;
                 }
                 if (args.length == 3) {
-                    return handleWhitelistModification(player, subCommand, args[1].toLowerCase(), args[2], regionManager);
+                    return handleWhitelistModification(sender, subCommand, args[1].toLowerCase(), args[2], regionManager);
                 }
             }
             case "flag" -> {
-                if (!player.hasPermission(Permissions.FLAG.permission())) {
-                    MessageUtils.sendMessage(player, "no-permission");
+                if (!sender.hasPermission(Permissions.FLAG.permission())) {
+                    MessageUtils.sendMessage(sender, "no-permission");
                     return false;
                 }
                 if (args.length == 4) {
-                    return handleFlagCommand(player, args[1].toLowerCase(), args[2], args[3], regionManager, flagRegistry);
+                    return handleFlagCommand(sender, args[1].toLowerCase(), args[2], args[3], regionManager, flagRegistry);
                 }
             }
         }
 
-        MessageUtils.sendMessage(player, "invalid-usage");
+        MessageUtils.sendMessage(sender, "invalid-usage");
         return true;
     }
 
@@ -144,7 +147,7 @@ public class RegionCommand implements TabExecutor {
         }
     }
 
-    private boolean handleWhitelistCommand(Player player, String regionName, RegionManager regionManager) {
+    private boolean handleWhitelistCommand(CommandSender player, String regionName, RegionManager regionManager) {
         if (regionDoesntExist(regionName, regionManager)) {
             MessageUtils.sendMessage(player, "region-not-exists");
             return false;
@@ -158,7 +161,7 @@ public class RegionCommand implements TabExecutor {
         return true;
     }
 
-    private boolean handleWhitelistModification(Player player, String action, String regionName, String targetPlayer, RegionManager regionManager) {
+    private boolean handleWhitelistModification(CommandSender player, String action, String regionName, String targetPlayer, RegionManager regionManager) {
         if (regionDoesntExist(regionName, regionManager)) {
             MessageUtils.sendMessage(player, "region-not-exists");
             return false;
@@ -201,7 +204,7 @@ public class RegionCommand implements TabExecutor {
         return false;
     }
 
-    private boolean handleFlagCommand(Player player, String regionName, String flag, String state, RegionManager regionManager, FlagRegistry flagRegistry) {
+    private boolean handleFlagCommand(CommandSender player, String regionName, String flag, String state, RegionManager regionManager, FlagRegistry flagRegistry) {
         if (regionDoesntExist(regionName, regionManager)) {
             MessageUtils.sendMessage(player, "region-not-exists");
             return false;
@@ -240,38 +243,63 @@ public class RegionCommand implements TabExecutor {
         RegionManager regionManager = RegionManager.getInstance();
         FlagRegistry flagRegistry = FlagRegistry.getInstance();
 
+        List<String> completions = new ArrayList<>();
+
         switch (args.length) {
             case 1 -> {
-                return List.of("wand", "create", "whitelist", "add", "remove", "flag");
+                if (sender.hasPermission(Permissions.WAND.permission())) completions.add("wand");
+                if (sender.hasPermission(Permissions.CREATE.permission())) completions.add("create");
+                if (sender.hasPermission(Permissions.WHITELIST.permission())) completions.add("whitelist");
+                if (sender.hasPermission(Permissions.ADD.permission())) completions.add("add");
+                if (sender.hasPermission(Permissions.REMOVE.permission())) completions.add("remove");
+                if (sender.hasPermission(Permissions.FLAG.permission())) completions.add("flag");
             }
             case 2 -> {
-                return switch (args[0]) {
-                    case "create" -> List.of("<name>");
-                    case "whitelist", "add", "remove", "flag" -> regionManager.getNames();
-                    default -> Collections.emptyList();
-                };
+                switch (args[0]) {
+                    case "create" -> {
+                        if (sender.hasPermission(Permissions.CREATE.permission())) completions.add("<name>");
+                    }
+                    case "whitelist", "add", "remove", "flag" -> {
+                        if (sender.hasPermission(Permissions.WHITELIST.permission()) || sender.hasPermission(Permissions.ADD.permission()) ||
+                                sender.hasPermission(Permissions.REMOVE.permission()) || sender.hasPermission(Permissions.FLAG.permission())) {
+                            completions.addAll(regionManager.getNames());
+                        }
+                    }
+                }
             }
             case 3 -> {
-                return switch (args[0]) {
-                    case "add" -> Bukkit.getServer().getOnlinePlayers().stream()
-                            .map(Player::getName)
-                            .filter(playerName -> !regionManager.getRegion(args[1]).getWhitelistedPlayers().contains(playerName))
-                            .collect(Collectors.toList());
-                    case "remove" -> regionManager.getRegion(args[1]).getWhitelistedPlayers();
-                    case "flag" -> flagRegistry.getFlags().stream()
-                            .map(Flag::getName)
-                            .collect(Collectors.toList());
-                    default -> Collections.emptyList();
-                };
+                switch (args[0]) {
+                    case "add" -> {
+                        if (sender.hasPermission(Permissions.ADD.permission())) {
+                            completions.addAll(Bukkit.getServer().getOnlinePlayers().stream()
+                                    .map(Player::getName)
+                                    .filter(playerName -> !regionManager.getRegion(args[1]).getWhitelistedPlayers().contains(playerName))
+                                    .toList());
+                        }
+                    }
+                    case "remove" -> {
+                        if (sender.hasPermission(Permissions.REMOVE.permission())) {
+                            completions.addAll(regionManager.getRegion(args[1]).getWhitelistedPlayers());
+                        }
+                    }
+                    case "flag" -> {
+                        if (sender.hasPermission(Permissions.FLAG.permission())) {
+                            completions.addAll(flagRegistry.getFlags().stream()
+                                    .map(Flag::getName)
+                                    .toList());
+                        }
+                    }
+                }
             }
             case 4 -> {
-                if ("flag".equals(args[0])) {
-                    return List.of("EVERYONE", "WHITELIST", "NONE");
+                if ("flag".equals(args[0]) && sender.hasPermission(Permissions.FLAG.permission())) {
+                    completions.addAll(List.of("EVERYONE", "WHITELIST", "NONE"));
                 }
             }
         }
 
-        return Collections.emptyList();
+        return completions.isEmpty() ? Collections.emptyList() : completions;
     }
+
 
 }
