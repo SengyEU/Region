@@ -44,7 +44,7 @@ public class WandManager implements Listener {
     private final Map<UUID, Location[]> playerSelections = new HashMap<>();
 
     public ItemStack getWand() {
-        ItemStack wand =  new ItemStack(Material.STICK);
+        ItemStack wand = new ItemStack(Material.STICK);
         ItemMeta meta = wand.getItemMeta();
         meta.displayName(ComponentUtils.deserialize(ConfigurationManager.getInstance().getConfiguration("config").getString("regions.wand.item-name")));
 

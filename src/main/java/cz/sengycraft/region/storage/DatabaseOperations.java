@@ -106,17 +106,6 @@ public class DatabaseOperations {
         return whitelistedPlayers;
     }
 
-
-    public void updateRegionName(String regionName, String newName) throws Exception {
-        String sql = "UPDATE regions SET name = ? WHERE name = ?";
-        Connection connection = hikariDataSource.getConnection();
-        PreparedStatement statement = connection.prepareStatement(sql);
-
-        statement.setString(1, newName);
-        statement.setString(2, regionName);
-        statement.executeUpdate();
-    }
-
     public void saveRegion(Region region) throws Exception {
         String sql = "INSERT INTO regions (name, pos1X, pos1Y, pos1Z, pos1World, pos2X, pos2Y, pos2Z, pos2World) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
         Connection connection = hikariDataSource.getConnection();
@@ -144,7 +133,7 @@ public class DatabaseOperations {
             insertFlagStmt.executeUpdate();
         }
 
-        if(!region.getWhitelistedPlayers().isEmpty()) {
+        if (!region.getWhitelistedPlayers().isEmpty()) {
             String insertWhitelistSql = "INSERT INTO region_whitelist (region_name, player_name) VALUES (?, ?)";
             PreparedStatement insertWhitelistStmt = connection.prepareStatement(insertWhitelistSql);
 

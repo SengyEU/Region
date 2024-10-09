@@ -2,6 +2,7 @@ package cz.sengycraft.region.commands;
 
 import cz.sengycraft.region.RegionPlugin;
 import cz.sengycraft.region.common.Permissions;
+import cz.sengycraft.region.gui.RegionsMenu;
 import cz.sengycraft.region.regions.Region;
 import cz.sengycraft.region.regions.RegionManager;
 import cz.sengycraft.region.regions.flags.Flag;
@@ -36,9 +37,19 @@ public class RegionCommand implements TabExecutor {
         WandManager wandManager = WandManager.getInstance();
         FlagRegistry flagRegistry = FlagRegistry.getInstance();
 
-        if (args.length < 1) {
-            MessageUtils.sendMessage(sender, "invalid-usage");
-            return false;
+        if (args.length == 0) {
+            if (!(sender instanceof Player player)) {
+                MessageUtils.sendMessage(sender, "only-players");
+                return false;
+            }
+
+            if (!sender.hasPermission(Permissions.MENU.permission())) {
+                MessageUtils.sendMessage(sender, "no-permission");
+                return false;
+            }
+
+            RegionsMenu.openRegionsMenu(player);
+            return true;
         }
 
         String subCommand = args[0].toLowerCase();

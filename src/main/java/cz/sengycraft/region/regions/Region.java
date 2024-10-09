@@ -39,7 +39,6 @@ public class Region {
 
     public void setName(String name) throws Exception {
         this.name = name;
-        databaseOperations.updateRegionName(this.name, name);
     }
 
     public Location getPos1() {

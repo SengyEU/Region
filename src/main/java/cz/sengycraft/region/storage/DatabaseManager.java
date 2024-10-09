@@ -49,25 +49,25 @@ public class DatabaseManager {
         Connection connection = hikariDataSource.getConnection();
 
         String createRegionsTable = """
-            CREATE TABLE IF NOT EXISTS regions (
-                name VARCHAR(255) PRIMARY KEY,
-                pos1X DOUBLE,
-                pos1Y DOUBLE,
-                pos1Z DOUBLE,
-                pos1World VARCHAR(255),
-                pos2X DOUBLE,
-                pos2Y DOUBLE,
-                pos2Z DOUBLE,
-                pos2World VARCHAR(255)
-            );
-            """;
+                CREATE TABLE IF NOT EXISTS regions (
+                    name VARCHAR(255) PRIMARY KEY,
+                    pos1X DOUBLE,
+                    pos1Y DOUBLE,
+                    pos1Z DOUBLE,
+                    pos1World VARCHAR(255),
+                    pos2X DOUBLE,
+                    pos2Y DOUBLE,
+                    pos2Z DOUBLE,
+                    pos2World VARCHAR(255)
+                );
+                """;
 
         String createRegionFlagsTable = """
             CREATE TABLE IF NOT EXISTS region_flags (
                 region_name VARCHAR(255),
                 flag VARCHAR(255),
                 state VARCHAR(255),
-                FOREIGN KEY (region_name) REFERENCES regions(name) ON DELETE CASCADE
+                FOREIGN KEY (region_name) REFERENCES regions(name) ON DELETE CASCADE ON UPDATE CASCADE
             );
             """;
 
@@ -75,7 +75,7 @@ public class DatabaseManager {
             CREATE TABLE IF NOT EXISTS region_whitelist (
                 region_name VARCHAR(255),
                 player_name VARCHAR(255),
-                FOREIGN KEY (region_name) REFERENCES regions(name) ON DELETE CASCADE
+                FOREIGN KEY (region_name) REFERENCES regions(name) ON DELETE CASCADE ON UPDATE CASCADE
             );
             """;
 

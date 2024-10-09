@@ -19,3 +19,149 @@ regions:
   default-state: WHITELIST # EVERYONE, WHITELIST, NONE
   wand:
     item-name: "<green>Selection wand"
+  gui:
+    regions:
+      rows: 6
+      title: "<green>Regions menu"
+      region:
+        item: DIAMOND
+        title: "<green>{region}"
+        lore: "<gray>Click to go to config of region {region}"
+      fill-item:
+        material: AIR
+        slot: 45-47;51-53
+      previous-page:
+        title: "<green>Previous page"
+        lore:
+          - "<gray>Click to go to the previous page"
+        material: ARROW
+        slot: 48
+      next-page:
+        title: "<green>Next page"
+        lore:
+          - "<gray>Click to go to the next page"
+        material: ARROW
+        slot: 50
+      refresh:
+        title: "<green>Refresh"
+        lore:
+          - "<gray>Refreshes the gui"
+        material: NETHER_STAR
+        slot: 49
+    region:
+      title: "<green>Region Menu for {region}"
+      rows: 4
+      rename:
+        title: "<green>Rename Region"
+        material: NAME_TAG
+        lore:
+          - "<gray>Click to rename {region}"
+        slot: 11
+      whitelist-add:
+        title: "<green>Add Whitelist"
+        material: PLAYER_HEAD
+        lore:
+          - "<gray>Add a player to {region}'s whitelist"
+        slot: 12
+      whitelist-remove:
+        title: "<green>Remove Whitelist"
+        material: PLAYER_HEAD
+        lore:
+          - "<gray>Remove a player from {region}'s whitelist"
+        slot: 13
+      redefine-location:
+        title: "<green>Redefine Location"
+        material: COMPASS
+        lore:
+          - "<gray>Redefine {region}'s location"
+        slot: 14
+      edit-flags:
+        title: "<green>Edit Flags"
+        material: WHITE_BANNER
+        lore:
+          - "<gray>Edit flags for {region}"
+        slot: 15
+      back:
+        title: "<green>Back"
+        material: ARROW
+        lore:
+          - "<gray>Click to go back"
+        slot: 31
+    whitelist-add:
+      title: "<green>Add to whitelist of region {region}"
+      rows: 4
+      player:
+        item: PLAYER_HEAD
+        title: "<green>{player}"
+        lore:
+          - "<gray>Click to add to whitelist"
+      previous-page:
+        title: "<green>Previous page"
+        lore:
+          - "<gray>Click to go to the previous page"
+        material: ARROW
+        slot: 30
+      next-page:
+        title: "<green>Next page"
+        lore:
+          - "<gray>Click to go to the next page"
+        material: ARROW
+        slot: 32
+      back:
+        title: "<green>Back"
+        material: ARROW
+        lore:
+          - "<gray>Click to go back"
+        slot: 31
+    whitelist-remove:
+      title: "<green>Remove from whitelist of region {region}"
+      rows: 4
+      player:
+        item: PLAYER_HEAD
+        title: "<green>{player}"
+        lore:
+          - "<gray>Click to add to whitelist"
+      previous-page:
+        title: "<green>Previous page"
+        lore:
+          - "<gray>Click to go to the previous page"
+        material: ARROW
+        slot: 30
+      next-page:
+        title: "<green>Next page"
+        lore:
+          - "<gray>Click to go to the next page"
+        material: ARROW
+        slot: 32
+      back:
+        title: "<green>Back"
+        material: ARROW
+        lore:
+          - "<gray>Click to go back"
+        slot: 31
+    flags:
+      title: "<green>Flags of region {region}"
+      rows: 4
+      flag:
+        item: PAPER
+        title: "<green>{flag}"
+        active: "<gold>{state}"
+        inactive: "<green>{state}"
+      previous-page:
+        title: "<green>Previous page"
+        lore:
+          - "<gray>Click to go to the previous page"
+        material: ARROW
+        slot: 30
+      next-page:
+        title: "<green>Next page"
+        lore:
+          - "<gray>Click to go to the next page"
+        material: ARROW
+        slot: 32
+      back:
+        title: "<green>Back"
+        material: ARROW
+        lore:
+          - "<gray>Click to go back"
+        slot: 31

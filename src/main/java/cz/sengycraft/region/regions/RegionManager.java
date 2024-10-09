@@ -22,8 +22,8 @@ public class RegionManager {
 
     private Set<Region> regions = new HashSet<>();
 
-    public void addFlags(Flag ... flags) {
-        for(Region region : regions) {
+    public void addFlags(Flag... flags) {
+        for (Region region : regions) {
             region.addFlags(flags);
         }
     }
@@ -43,16 +43,16 @@ public class RegionManager {
         return regions;
     }
 
-    public boolean addRegions(Region ... regions) throws Exception {
-        for(Region region : regions) {
-            if(createRegion(region)) return true;
+    public boolean addRegions(Region... regions) throws Exception {
+        for (Region region : regions) {
+            if (createRegion(region)) return true;
         }
 
         return false;
     }
 
     public boolean createRegion(Region region) throws Exception {
-        if(regions.add(region)) {
+        if (regions.add(region)) {
             DatabaseOperations.getInstance().saveRegion(region);
             return true;
         }
@@ -76,7 +76,7 @@ public class RegionManager {
                     .getConfiguration("config")
                     .getString("regions.default-state");
 
-            if(configState == null) throw new IllegalArgumentException();
+            if (configState == null) throw new IllegalArgumentException();
 
             return FlagState.valueOf(configState.toUpperCase());
 
