@@ -38,6 +38,7 @@ public class Region {
     }
 
     public void setName(String name) throws Exception {
+        DatabaseOperations.getInstance().updateRegionName(this.name, name);
         this.name = name;
     }
 

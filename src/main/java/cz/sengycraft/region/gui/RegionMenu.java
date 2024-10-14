@@ -1,6 +1,7 @@
 package cz.sengycraft.region.gui;
 
 import cz.sengycraft.region.configuration.ConfigurationManager;
+import cz.sengycraft.region.listeners.RenameListener;
 import cz.sengycraft.region.regions.Region;
 import cz.sengycraft.region.regions.wand.WandManager;
 import cz.sengycraft.region.utils.ComponentUtils;
@@ -42,8 +43,9 @@ public class RegionMenu {
         ItemStack renameItem = getControlItem("rename", region);
         HashSet<Integer> renameSlots = ItemStackUtils.getSlots(config.getString("regions.gui.region.rename.slot"));
         gui.setItem(renameSlots.stream().toList(), new GuiItem(renameItem, event -> {
-            // MessageUtils.sendMessage(player, "rename");
-            // gui.close(player);
+            gui.close(player);
+            RenameListener.getInstance().add(player.getUniqueId(), region);
+            MessageUtils.sendMessage(player, "rename");
         }));
 
         ItemStack whitelistAddItem = getControlItem("whitelist-add", region);

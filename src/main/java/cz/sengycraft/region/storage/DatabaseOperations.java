@@ -203,4 +203,16 @@ public class DatabaseOperations {
             statement.executeUpdate();
         }
     }
+
+    public void updateRegionName(String oldRegionName, String newRegionName) throws Exception {
+        String sql = "UPDATE regions SET name = ? WHERE name = ?";
+
+        try (Connection connection = hikariDataSource.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, newRegionName);
+            statement.setString(2, oldRegionName);
+            statement.executeUpdate();
+        }
+    }
+
 }
