@@ -63,21 +63,21 @@ public class DatabaseManager {
                 """;
 
         String createRegionFlagsTable = """
-            CREATE TABLE IF NOT EXISTS region_flags (
-                region_name VARCHAR(255),
-                flag VARCHAR(255),
-                state VARCHAR(255),
-                FOREIGN KEY (region_name) REFERENCES regions(name) ON DELETE CASCADE ON UPDATE CASCADE
-            );
-            """;
+                CREATE TABLE IF NOT EXISTS region_flags (
+                    region_name VARCHAR(255),
+                    flag VARCHAR(255),
+                    state VARCHAR(255),
+                    FOREIGN KEY (region_name) REFERENCES regions(name) ON DELETE CASCADE ON UPDATE CASCADE
+                );
+                """;
 
         String createRegionWhitelistTable = """
-            CREATE TABLE IF NOT EXISTS region_whitelist (
-                region_name VARCHAR(255),
-                player_name VARCHAR(255),
-                FOREIGN KEY (region_name) REFERENCES regions(name) ON DELETE CASCADE ON UPDATE CASCADE
-            );
-            """;
+                CREATE TABLE IF NOT EXISTS region_whitelist (
+                    region_name VARCHAR(255),
+                    player_name VARCHAR(255),
+                    FOREIGN KEY (region_name) REFERENCES regions(name) ON DELETE CASCADE ON UPDATE CASCADE
+                );
+                """;
 
 
         PreparedStatement statement1 = connection.prepareStatement(createRegionsTable);

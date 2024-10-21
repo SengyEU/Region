@@ -6,7 +6,10 @@ import cz.sengycraft.region.regions.flags.FlagState;
 import cz.sengycraft.region.storage.DatabaseOperations;
 import org.bukkit.Location;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class Region {
 
@@ -64,9 +67,10 @@ public class Region {
         return flags;
     }
 
-    public void addFlags(Flag ... flags) {
-        for(Flag flag : flags) {
+    public void addFlags(Flag... flags) {
+        for (Flag flag : flags) {
             this.flags.put(flag, RegionManager.getDefaultState());
+            DatabaseOperations.getInstance().addFlag(name, flag, RegionManager.getDefaultState());
         }
     }
 

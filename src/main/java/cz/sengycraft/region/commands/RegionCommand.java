@@ -144,7 +144,7 @@ public class RegionCommand implements TabExecutor {
         }
 
         try {
-            if (!regionManager.addRegions(new Region(regionName, loc[0], loc[1]))) {
+            if (!regionManager.addRegion(new Region(regionName, loc[0], loc[1]))) {
                 MessageUtils.sendMessage(player, "region-name-exists");
                 return false;
             }

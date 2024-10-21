@@ -13,6 +13,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
+import java.util.function.Consumer;
 
 public class DatabaseOperations {
 
@@ -27,47 +28,29 @@ public class DatabaseOperations {
     HikariDataSource hikariDataSource = databaseManager.getHikariDataSource();
     RegionPlugin plugin = databaseManager.getPlugin();
 
-    public Set<Region> getAllRegions() throws Exception {
-        Set<Region> allRegions = new HashSet<>();
-        try (Connection connection = hikariDataSource.getConnection()) {
-            PreparedStatement regionStatement = connection.prepareStatement("SELECT * FROM regions");
-            ResultSet regionResult = regionStatement.executeQuery();
+    public void getAllRegions(Consumer<Set<Region>> callback) {
 
-            while (regionResult.next()) {
-                String regionName = regionResult.getString("name");
-                Location pos1 = createLocation(regionResult, "pos1");
-                Location pos2 = createLocation(regionResult, "pos2");
+        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+            Set<Region> allRegions = new HashSet<>();
+            try (Connection connection = hikariDataSource.getConnection()) {
+                PreparedStatement regionStatement = connection.prepareStatement("SELECT * FROM regions");
+                ResultSet regionResult = regionStatement.executeQuery();
 
-                Map<Flag, FlagState> flags = loadFlags(connection, regionName);
-                List<String> whitelistedPlayers = loadWhitelistedPlayers(connection, regionName);
+                while (regionResult.next()) {
+                    String regionName = regionResult.getString("name");
+                    Location pos1 = createLocation(regionResult, "pos1");
+                    Location pos2 = createLocation(regionResult, "pos2");
 
-                allRegions.add(new Region(regionName, pos1, pos2, flags, whitelistedPlayers));
+                    Map<Flag, FlagState> flags = loadFlags(connection, regionName);
+                    List<String> whitelistedPlayers = loadWhitelistedPlayers(connection, regionName);
+
+                    allRegions.add(new Region(regionName, pos1, pos2, flags, whitelistedPlayers));
+                }
+                callback.accept(allRegions);
+            } catch (SQLException e) {
+                plugin.getComponentLogger().error("Couldn't load regions from database!", e);
             }
-        }
-        return allRegions;
-    }
-
-    public Region getRegion(String regionName) throws Exception {
-        Location pos1 = null;
-        Location pos2 = null;
-        Map<Flag, FlagState> flags;
-        List<String> whitelistedPlayers;
-
-        try (Connection connection = hikariDataSource.getConnection()) {
-            PreparedStatement regionStatement = connection.prepareStatement("SELECT * FROM regions WHERE name = ?");
-            regionStatement.setString(1, regionName);
-            ResultSet regionResult = regionStatement.executeQuery();
-
-            if (regionResult.next()) {
-                pos1 = createLocation(regionResult, "pos1");
-                pos2 = createLocation(regionResult, "pos2");
-            }
-
-            flags = loadFlags(connection, regionName);
-            whitelistedPlayers = loadWhitelistedPlayers(connection, regionName);
-        }
-
-        return new Region(regionName, pos1, pos2, flags, whitelistedPlayers);
+        });
     }
 
     private Location createLocation(ResultSet resultSet, String posPrefix) throws SQLException {
@@ -106,113 +89,160 @@ public class DatabaseOperations {
         return whitelistedPlayers;
     }
 
-    public void saveRegion(Region region) throws Exception {
-        String sql = "INSERT INTO regions (name, pos1X, pos1Y, pos1Z, pos1World, pos2X, pos2Y, pos2Z, pos2World) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
-        Connection connection = hikariDataSource.getConnection();
-        PreparedStatement statement = connection.prepareStatement(sql);
+    public void saveRegion(Region region) {
+        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+            try (Connection connection = hikariDataSource.getConnection()) {
+                String sql = "INSERT INTO regions (name, pos1X, pos1Y, pos1Z, pos1World, pos2X, pos2Y, pos2Z, pos2World) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                PreparedStatement statement = connection.prepareStatement(sql);
 
-        statement.setString(1, region.getName());
-        statement.setDouble(2, region.getPos1().getX());
-        statement.setDouble(3, region.getPos1().getY());
-        statement.setDouble(4, region.getPos1().getZ());
-        statement.setString(5, region.getPos1().getWorld().getName());
-        statement.setDouble(6, region.getPos2().getX());
-        statement.setDouble(7, region.getPos2().getY());
-        statement.setDouble(8, region.getPos2().getZ());
-        statement.setString(9, region.getPos2().getWorld().getName());
+                statement.setString(1, region.getName());
+                statement.setDouble(2, region.getPos1().getX());
+                statement.setDouble(3, region.getPos1().getY());
+                statement.setDouble(4, region.getPos1().getZ());
+                statement.setString(5, region.getPos1().getWorld().getName());
+                statement.setDouble(6, region.getPos2().getX());
+                statement.setDouble(7, region.getPos2().getY());
+                statement.setDouble(8, region.getPos2().getZ());
+                statement.setString(9, region.getPos2().getWorld().getName());
 
-        statement.executeUpdate();
+                statement.executeUpdate();
 
-        String insertFlagSql = "INSERT INTO region_flags (region_name, flag, state) VALUES (?, ?, ?)";
-        PreparedStatement insertFlagStmt = connection.prepareStatement(insertFlagSql);
+                String insertFlagSql = "INSERT INTO region_flags (region_name, flag, state) VALUES (?, ?, ?)";
+                PreparedStatement insertFlagStmt = connection.prepareStatement(insertFlagSql);
 
-        for (Map.Entry<Flag, FlagState> entry : region.getFlags().entrySet()) {
-            insertFlagStmt.setString(1, region.getName());
-            insertFlagStmt.setString(2, entry.getKey().getName());
-            insertFlagStmt.setString(3, entry.getValue().toString());
-            insertFlagStmt.executeUpdate();
-        }
+                for (Map.Entry<Flag, FlagState> entry : region.getFlags().entrySet()) {
+                    insertFlagStmt.setString(1, region.getName());
+                    insertFlagStmt.setString(2, entry.getKey().getName());
+                    insertFlagStmt.setString(3, entry.getValue().toString());
+                    insertFlagStmt.executeUpdate();
+                }
 
-        if (!region.getWhitelistedPlayers().isEmpty()) {
-            String insertWhitelistSql = "INSERT INTO region_whitelist (region_name, player_name) VALUES (?, ?)";
-            PreparedStatement insertWhitelistStmt = connection.prepareStatement(insertWhitelistSql);
+                if (!region.getWhitelistedPlayers().isEmpty()) {
+                    String insertWhitelistSql = "INSERT INTO region_whitelist (region_name, player_name) VALUES (?, ?)";
+                    PreparedStatement insertWhitelistStmt = connection.prepareStatement(insertWhitelistSql);
 
-            for (String playerName : region.getWhitelistedPlayers()) {
-                insertWhitelistStmt.setString(1, region.getName());
-                insertWhitelistStmt.setString(2, playerName);
-                insertWhitelistStmt.executeUpdate();
+                    for (String playerName : region.getWhitelistedPlayers()) {
+                        insertWhitelistStmt.setString(1, region.getName());
+                        insertWhitelistStmt.setString(2, playerName);
+                        insertWhitelistStmt.executeUpdate();
+                    }
+                }
+            } catch (Exception e) {
+                plugin.getComponentLogger().error("Couldn't save region to the database!", e);
             }
-        }
-    }
-
-    public void updateRegionPos(String regionName, boolean isPos1, Location loc) throws Exception {
-        String pos = isPos1 ? "1" : "2";
-
-        String sql = "UPDATE regions SET pos" + pos + "X = ?, pos" + pos + "Y = ?, pos" + pos + "Z = ?, pos" + pos + "World = ? WHERE name = ?";
-
-        Connection connection = hikariDataSource.getConnection();
-        PreparedStatement statement = connection.prepareStatement(sql);
-
-        statement.setDouble(1, loc.getX());
-        statement.setDouble(2, loc.getY());
-        statement.setDouble(3, loc.getZ());
-        statement.setString(4, loc.getWorld().getName());
-        statement.setString(5, regionName);
-
-        statement.executeUpdate();
+        });
     }
 
 
-    public void deleteRegion(String regionName) throws Exception {
-        String sql = "DELETE FROM regions WHERE name = ?";
-        Connection connection = hikariDataSource.getConnection();
-        PreparedStatement statement = connection.prepareStatement(sql);
+    public void updateRegionPos(String regionName, boolean isPos1, Location loc) {
+        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+            String pos = isPos1 ? "1" : "2";
 
-        statement.setString(1, regionName);
-        statement.executeUpdate();
+            String sql = "UPDATE regions SET pos" + pos + "X = ?, pos" + pos + "Y = ?, pos" + pos + "Z = ?, pos" + pos + "World = ? WHERE name = ?";
+
+            try (Connection connection = hikariDataSource.getConnection();
+                 PreparedStatement statement = connection.prepareStatement(sql)) {
+
+                statement.setDouble(1, loc.getX());
+                statement.setDouble(2, loc.getY());
+                statement.setDouble(3, loc.getZ());
+                statement.setString(4, loc.getWorld().getName());
+                statement.setString(5, regionName);
+
+                statement.executeUpdate();
+                ;
+            } catch (Exception e) {
+                plugin.getComponentLogger().error("Couldn't update region position!", e);
+            }
+        });
     }
 
-    public void addPlayerToWhitelist(String regionName, String playerName) throws Exception {
-        String sql = "INSERT INTO region_whitelist (region_name, player_name) VALUES (?, ?)";
-        Connection connection = hikariDataSource.getConnection();
-        PreparedStatement statement = connection.prepareStatement(sql);
 
-        statement.setString(1, regionName);
-        statement.setString(2, playerName);
-        statement.executeUpdate();
+    public void addPlayerToWhitelist(String regionName, String playerName) {
+        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+            String sql = "INSERT INTO region_whitelist (region_name, player_name) VALUES (?, ?)";
 
+            try (Connection connection = hikariDataSource.getConnection();
+                 PreparedStatement statement = connection.prepareStatement(sql)) {
+
+                statement.setString(1, regionName);
+                statement.setString(2, playerName);
+                statement.executeUpdate();
+            } catch (Exception e) {
+                plugin.getComponentLogger().error("Couldn't add player to whitelist!", e);
+            }
+        });
     }
 
-    public void removePlayerFromWhitelist(String regionName, String playerName) throws Exception {
-        String sql = "DELETE FROM region_whitelist WHERE region_name = ? AND player_name = ?";
-        Connection connection = hikariDataSource.getConnection();
-        PreparedStatement statement = connection.prepareStatement(sql);
 
-        statement.setString(1, regionName);
-        statement.setString(2, playerName);
-        statement.executeUpdate();
+    public void removePlayerFromWhitelist(String regionName, String playerName) {
+        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+            String sql = "DELETE FROM region_whitelist WHERE region_name = ? AND player_name = ?";
+
+            try (Connection connection = hikariDataSource.getConnection();
+                 PreparedStatement statement = connection.prepareStatement(sql)) {
+
+                statement.setString(1, regionName);
+                statement.setString(2, playerName);
+                statement.executeUpdate();
+            } catch (Exception e) {
+                plugin.getComponentLogger().error("Couldn't remove player from whitelist!", e);
+            }
+        });
     }
 
-    public void updateFlagState(String regionName, String flagName, FlagState state) throws Exception {
-        String sql = "UPDATE region_flags SET state = ? WHERE region_name = ? AND flag = ?";
-        try (Connection connection = hikariDataSource.getConnection()) {
-            PreparedStatement statement = connection.prepareStatement(sql);
-            statement.setString(1, state.name());
-            statement.setString(2, regionName);
-            statement.setString(3, flagName);
-            statement.executeUpdate();
-        }
+
+    public void addFlag(String regionName, Flag flag, FlagState flagState) {
+        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+            String sql = "INSERT INTO region_flags (region_name, flag, state) VALUES (?, ?, ?)";
+
+            try (Connection connection = hikariDataSource.getConnection();
+                 PreparedStatement statement = connection.prepareStatement(sql)) {
+
+                statement.setString(1, regionName);
+                statement.setString(2, flag.getName());
+                statement.setString(3, flagState.name());
+
+                statement.executeUpdate();
+            } catch (Exception e) {
+                plugin.getComponentLogger().error("Couldn't add or update flag!", e);
+            }
+        });
     }
 
-    public void updateRegionName(String oldRegionName, String newRegionName) throws Exception {
-        String sql = "UPDATE regions SET name = ? WHERE name = ?";
+    public void updateFlagState(String regionName, String flagName, FlagState state) {
+        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+            String sql = "UPDATE region_flags SET state = ? WHERE region_name = ? AND flag = ?";
 
-        try (Connection connection = hikariDataSource.getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setString(1, newRegionName);
-            statement.setString(2, oldRegionName);
-            statement.executeUpdate();
-        }
+            try (Connection connection = hikariDataSource.getConnection();
+                 PreparedStatement statement = connection.prepareStatement(sql)) {
+
+                statement.setString(1, state.name());
+                statement.setString(2, regionName);
+                statement.setString(3, flagName);
+                statement.executeUpdate();
+            } catch (Exception e) {
+                plugin.getComponentLogger().error("Couldn't update flag state!", e);
+            }
+        });
     }
+
+
+    public void updateRegionName(String oldRegionName, String newRegionName) {
+        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+            String sql = "UPDATE regions SET name = ? WHERE name = ?";
+
+            try (Connection connection = hikariDataSource.getConnection();
+                 PreparedStatement statement = connection.prepareStatement(sql)) {
+
+                statement.setString(1, newRegionName);
+                statement.setString(2, oldRegionName);
+                statement.executeUpdate();
+            } catch (Exception e) {
+                plugin.getComponentLogger().error("Couldn't update region name!", e);
+            }
+        });
+    }
+
 
 }

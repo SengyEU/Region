@@ -66,11 +66,9 @@ public class FlagsMenu {
             ItemStack flagItem = getFlagItem(flagEntry);
             gui.addItem(new GuiItem(flagItem, event -> {
                 try {
-                    // Toggle the flag state
                     FlagState newState = getNextFlagState(flagEntry.getValue());
                     region.changeState(flagEntry.getKey().getName(), newState);
 
-                    // Send confirmation message
                     MessageUtils.sendMessage(player, "flag.changed",
                             new Pair<>("{region}", region.getName()),
                             new Pair<>("{flag}", flagEntry.getKey().getName()),

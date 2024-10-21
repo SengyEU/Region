@@ -1,5 +1,7 @@
 package cz.sengycraft.region.regions.flags;
 
+import cz.sengycraft.region.regions.RegionManager;
+
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -17,6 +19,7 @@ public class FlagRegistry {
 
     public void addFlags(Flag... flags) {
         Collections.addAll(this.flags, flags);
+        RegionManager.getInstance().addFlags(flags);
     }
 
     public Set<Flag> getFlags() {

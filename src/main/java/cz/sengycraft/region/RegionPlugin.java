@@ -54,11 +54,8 @@ public final class RegionPlugin extends JavaPlugin {
                 }
             });
 
-            try {
-                RegionManager.getInstance().addAllRegions();
-            } catch (Exception e) {
-                getComponentLogger().error("Couldn't load regions from database!", e);
-            }
+            RegionManager.getInstance().setPlugin(this);
+            RegionManager.getInstance().addAllRegions(loadedRegions -> getComponentLogger().info("Regions loaded: " + loadedRegions.size()));
         }, "config", "messages");
 
     }

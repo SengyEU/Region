@@ -1,5 +1,6 @@
 package cz.sengycraft.region.regions;
 
+import cz.sengycraft.region.RegionPlugin;
 import cz.sengycraft.region.configuration.ConfigurationManager;
 import cz.sengycraft.region.regions.flags.Flag;
 import cz.sengycraft.region.regions.flags.FlagState;
@@ -8,6 +9,7 @@ import cz.sengycraft.region.storage.DatabaseOperations;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 public class RegionManager {
@@ -18,6 +20,12 @@ public class RegionManager {
         if (instance == null) instance = new RegionManager();
 
         return instance;
+    }
+
+    private RegionPlugin plugin;
+
+    public void setPlugin(RegionPlugin plugin) {
+        this.plugin = plugin;
     }
 
     private Set<Region> regions = new HashSet<>();
@@ -35,23 +43,24 @@ public class RegionManager {
                 .orElse(null);
     }
 
-    public void addAllRegions() throws Exception {
-        regions.addAll(DatabaseOperations.getInstance().getAllRegions());
+    public void addAllRegions(Consumer<Set<Region>> callback) {
+        DatabaseOperations.getInstance().getAllRegions(loadedRegions -> {
+            regions.addAll(loadedRegions);
+            callback.accept(regions);
+        });
     }
+
 
     public Set<Region> getRegions() {
         return regions;
     }
 
-    public boolean addRegions(Region... regions) throws Exception {
-        for (Region region : regions) {
-            if (createRegion(region)) return true;
-        }
-
-        return false;
+    public boolean addRegion(Region region) {
+        return createRegion(region);
     }
 
-    public boolean createRegion(Region region) throws Exception {
+
+    public boolean createRegion(Region region) {
         if (regions.add(region)) {
             DatabaseOperations.getInstance().saveRegion(region);
             return true;
@@ -62,11 +71,6 @@ public class RegionManager {
 
     public List<String> getNames() {
         return regions.stream().map(Region::getName).collect(Collectors.toList());
-    }
-
-    public void deleteRegion(String name) throws Exception {
-        regions.removeIf(region -> region.getName().equalsIgnoreCase(name));
-        DatabaseOperations.getInstance().deleteRegion(name);
     }
 
     public static FlagState getDefaultState() {
