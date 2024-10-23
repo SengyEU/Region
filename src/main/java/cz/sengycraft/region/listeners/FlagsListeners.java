@@ -3,6 +3,8 @@ package cz.sengycraft.region.listeners;
 import cz.sengycraft.region.common.Permissions;
 import cz.sengycraft.region.regions.Region;
 import cz.sengycraft.region.regions.RegionManager;
+import cz.sengycraft.region.regions.flags.Flag;
+import cz.sengycraft.region.regions.flags.FlagState;
 import cz.sengycraft.region.utils.MessageUtils;
 import cz.sengycraft.region.utils.Pair;
 import org.bukkit.Location;
@@ -41,9 +43,18 @@ public class FlagsListeners implements Listener {
 
     private void handleEvent(Player player, Location location, String action, Cancellable event) {
         Region region = getRegion(location);
-        if (region == null || isPlayerWhitelistedOrBypassed(region, player)) {
+        if (region == null) {
             return;
         }
+
+        FlagState state = region.getFlags().get(new Flag(action));
+
+
+        if ((state == FlagState.NONE && isPlayerBypassed(player)) ||
+                (state == FlagState.WHITELIST && isPlayerWhitelistedOrBypassed(region, player))) {
+            return;
+        }
+
         MessageUtils.sendMessage(player, "denied",
                 new Pair<>("{flag}", action),
                 new Pair<>("{region}", region.getName())
@@ -52,7 +63,11 @@ public class FlagsListeners implements Listener {
     }
 
     private boolean isPlayerWhitelistedOrBypassed(Region region, Player player) {
-        return region.isPlayerWhitelisted(player.getName()) || player.hasPermission(Permissions.BYPASS.permission());
+        return region.isPlayerWhitelisted(player.getName()) || isPlayerBypassed(player);
+    }
+
+    private boolean isPlayerBypassed(Player player) {
+        return player.hasPermission(Permissions.BYPASS.permission());
     }
 
     private Region getRegion(Location location) {

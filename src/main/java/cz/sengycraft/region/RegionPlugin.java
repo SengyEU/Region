@@ -12,6 +12,8 @@ import cz.sengycraft.region.regions.wand.WandManager;
 import cz.sengycraft.region.storage.DatabaseManager;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.lang.reflect.Field;
+
 public final class RegionPlugin extends JavaPlugin {
 
     private RegionAPI regionAPI;
@@ -62,7 +64,15 @@ public final class RegionPlugin extends JavaPlugin {
 
     @Override
     public void onDisable() {
-        DatabaseManager.getInstance().closeDatabase();
+        try {
+            Field field = JavaPlugin.class.getDeclaredField("isEnabled");
+            field.setAccessible(true);
+            field.set(this, true);
+            DatabaseManager.getInstance().closeDatabase();
+            field.set(this, false);
+        } catch (Exception e) {
+            getComponentLogger().error("Error when disabling the plugin!", e);
+        }
     }
 
 }
